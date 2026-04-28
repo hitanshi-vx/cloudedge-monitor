@@ -10,27 +10,53 @@ function TaskForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await API.post("/tasks", task);
-    alert("Task Created");
+
+    try {
+      const response = await API.post("/tasks", task);
+      console.log(response.data);
+      alert("Task Created");
+
+      setTask({
+        taskName: "",
+        taskType: "",
+        priority: ""
+      });
+
+    } catch (error) {
+      console.error("Error creating task:", error);
+      alert("Failed to create task");
+    }
   };
 
   return (
     <form onSubmit={handleSubmit}>
       <input
         placeholder="Task Name"
-        onChange={(e) => setTask({...task, taskName: e.target.value})}
+        value={task.taskName}
+        onChange={(e) =>
+          setTask({ ...task, taskName: e.target.value })
+        }
       />
+
       <input
         placeholder="Task Type"
-        onChange={(e) => setTask({...task, taskType: e.target.value})}
+        value={task.taskType}
+        onChange={(e) =>
+          setTask({ ...task, taskType: e.target.value })
+        }
       />
+
       <select
-        onChange={(e) => setTask({...task, priority: e.target.value})}
+        value={task.priority}
+        onChange={(e) =>
+          setTask({ ...task, priority: e.target.value })
+        }
       >
-        <option>Select Priority</option>
-        <option>High</option>
-        <option>Low</option>
+        <option value="">Select Priority</option>
+        <option value="High">High</option>
+        <option value="Low">Low</option>
       </select>
+
       <button type="submit">Create Task</button>
     </form>
   );

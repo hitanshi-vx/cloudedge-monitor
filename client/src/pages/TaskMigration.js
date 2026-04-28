@@ -8,7 +8,7 @@ function TaskMigration() {
   const [taskName, setTaskName] = useState("");
   const [priority, setPriority] = useState("High");
 
-  // Load tasks from backend
+  // Load existing tasks
   useEffect(() => {
     fetch("http://localhost:5000/api/tasks")
       .then((res) => res.json())
@@ -19,21 +19,33 @@ function TaskMigration() {
         console.log("Fetch error:", error);
       });
 
-    // Real-time socket listener
+    // Real-time new task listener
     socket.on("taskMigrated", (task) => {
       setTasks((prev) => {
-        const oldTasks = Array.isArray(prev) ? prev : [];
-
-        const exists = oldTasks.some((t) => t._id === task._id);
-
-        if (exists) return oldTasks;
-
-        return [task, ...oldTasks];
+        const exists = prev.some((t) => t._id === task._id);
+        if (exists) return prev;
+        return [task, ...prev];
       });
+    });
+
+    // Real-time status update listener
+    socket.on("taskUpdated", (updatedTask) => {
+      setTasks((prev) =>
+        prev.map((task) =>
+          task._id === updatedTask._id ? updatedTask : task
+        )
+      );
+    });
+
+    // Real-time delete listener
+    socket.on("taskDeleted", (taskId) => {
+      setTasks((prev) => prev.filter((task) => task._id !== taskId));
     });
 
     return () => {
       socket.off("taskMigrated");
+      socket.off("taskUpdated");
+      socket.off("taskDeleted");
     };
   }, []);
 
@@ -45,7 +57,7 @@ function TaskMigration() {
     }
 
     try {
-      const response = await fetch("http://localhost:5000/api/tasks/create", {
+      const response = await fetch("http://localhost:5000/api/tasks", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -58,16 +70,27 @@ function TaskMigration() {
 
       const newTask = await response.json();
 
-      setTasks((prev) => {
-        const oldTasks = Array.isArray(prev) ? prev : [];
-        return [newTask, ...oldTasks];
-      });
+      if (!response.ok) {
+        throw new Error(newTask.message || "Failed to create task");
+      }
 
       setTaskName("");
       setPriority("High");
 
     } catch (error) {
       console.log("Create task error:", error);
+      alert("Failed to create task");
+    }
+  };
+
+  // Delete task
+  const handleDeleteTask = async (id) => {
+    try {
+      await fetch(`http://localhost:5000/api/tasks/${id}`, {
+        method: "DELETE"
+      });
+    } catch (error) {
+      console.log("Delete task error:", error);
     }
   };
 
@@ -80,7 +103,6 @@ function TaskMigration() {
 
         <h2>Task Migration</h2>
 
-        {/* Create Task Form */}
         <div className="task-form">
           <input
             type="text"
@@ -102,7 +124,6 @@ function TaskMigration() {
           </button>
         </div>
 
-        {/* Task Table */}
         <table className="task-table">
           <thead>
             <tr>
@@ -110,22 +131,47 @@ function TaskMigration() {
               <th>Priority</th>
               <th>Assigned To</th>
               <th>Status</th>
+              <th>Action</th>
             </tr>
           </thead>
 
           <tbody>
             {tasks.length > 0 ? (
-              tasks.map((task, index) => (
-                <tr key={index}>
+              tasks.map((task) => (
+                <tr key={task._id}>
                   <td>{task.taskName}</td>
                   <td>{task.priority}</td>
                   <td>{task.assignedTo}</td>
-                  <td>{task.status}</td>
+                  <td>
+                      {task.status === "Running" ? (
+                      <span style={{ color: "orange", fontWeight: "bold" }}>
+                      🟡 Running
+                      </span>
+                      ) : (
+                      <span style={{ color: "green", fontWeight: "bold" }}>
+                      🟢 Completed
+                      </span>
+                      )}
+                  </td>                  
+                  <td><button onClick={() => handleDeleteTask(task._id)}
+                    style={{
+                    backgroundColor: "#dc3545",
+                    color: "white",
+                    border: "none",
+                    padding: "8px 14px",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    fontWeight: "bold"
+                    }}
+>
+                    🗑 Delete
+                  </button>
+                  </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="4">No tasks available</td>
+                <td colSpan="5">No tasks available</td>
               </tr>
             )}
           </tbody>

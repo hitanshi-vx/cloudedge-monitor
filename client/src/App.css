@@ -254,3 +254,12 @@ body {
 .task-form button:hover {
   background: #1d4ed8;
 }
+
+.delete-btn {
+  background: red;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  cursor: pointer;
+  border-radius: 5px;
+}
