@@ -4,7 +4,7 @@ Title - Role of cloud and edge computing in Data centers
 Type - Research paper
 Team Details
 Team Name: Smart Compute Team  
-Project Guide: Dr. ____________
+Project Guide: Dr. Ajay Katiyar
 
 | Name | Roll Number | Department | Email | Role |
 |------|-------------|------------|-------|------|
